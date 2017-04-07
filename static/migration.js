@@ -58,7 +58,7 @@ force.on("tick", function(e) {
          .attr("cx", function(d) { return d.x; })
          .attr("cy", function(d) { return d.y; });
 
-    if (window.root_node) {
+    if (window.root_node !== null) {
         var x_distance = (width / 2) - nodes[window.root_node].x;
         if (x_distance > 3) {
             nodes[window.root_node].x += 1;
