@@ -1,6 +1,6 @@
 from flask import Flask
-from flask import request
 from flask import render_template
+from flask import jsonify
 from lib.db_connect import NoSQLConnection
 
 app = Flask(__name__)
@@ -15,20 +15,9 @@ def index():
 
 
 @app.route("/streams/<streamname>/viewercount")
-def get_viewercount():
+def get_viewercount(streamname):
     """
-    gets the latest viewcount for the
-    """
-    start_time = request.args.get('start', 0, type=int)
-    end_time = request.args.get('end', 0, type=int)
-    print("{0} - {0}".format(start_time, end_time))
-    return start_time
-    # return a json of streamname and viewercount
-
-
-def get_latest_viewcount(streamname):
-    """
-    gets the latest viewcount for the stream specified
+    gets the latest viewcount for the specified streamer
     """
     pipeline = [
         {'$match': {'streamname': streamname}},
@@ -47,11 +36,11 @@ def get_latest_viewcount(streamname):
         return None
 
 
+@app.route("/streams/viewercounts")
 def get_latest_viewcounts():
     """
     gets the latest viewcounts for all streams
-    @return: an array of tuples with the first element being the streamname
-        and second being the the latest user_count
+    @return: JSON the key being the streamname and value being viewcount
     """
     # this query sorts by latest entry and then groups by streamname
     # thereby getting the latest usercount for each monitored streamer
@@ -65,14 +54,11 @@ def get_latest_viewcounts():
         }
     ]
     result = con.db[con.viewercount_collection].aggregate(pipeline)
-    latest_viewcounts = []
+    latest_viewcounts = {}
     for doc in result:
-        latest_viewcounts.append((doc['_id'], doc['latest_user_count']))
+        latest_viewcounts[doc['_id']] = doc['latest_user_count']
 
-    return latest_viewcounts
-
-
-get_latest_viewcount('summit1g')
+    return jsonify(latest_viewcounts)
 
 
 if __name__ == "__main__":
