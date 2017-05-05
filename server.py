@@ -19,6 +19,7 @@ def get_viewercount(streamname):
     """
     gets the latest viewcount for the specified streamer
     """
+    print('getting view count for {}'.format(streamname))
     pipeline = [
         {'$match': {'streamname': streamname}},
         {'$sort': {'time': -1}},
@@ -42,6 +43,7 @@ def get_latest_viewcounts():
     gets the latest viewcounts for all streams
     @return: JSON the key being the streamname and value being viewcount
     """
+    print('getting view count for all streams')
     # this query sorts by latest entry and then groups by streamname
     # thereby getting the latest usercount for each monitored streamer
     pipeline = [

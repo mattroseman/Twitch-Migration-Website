@@ -6,49 +6,58 @@ var width = 2000, height = 2000;
 
 var color = d3.scale.category10();
 
-var root_node = null;
-
 // number of seconds between getting the new viewercount data
-var update_interval = 10;
+var updateInterval = 10;
 
-var viewcount_request_happening = true;
-var last_viewcount_request = new Date() / 1000;
+var viewcountRequestHappening = true;
+var lastViewcountRequest = new Date() / 1000;
 
+// get the current list of streams and viewercounts
 $.ajax({
     url: "http://localhost:5000/streams/viewercounts",
     success: function(data) {
         for (var streamer in data) {
             nodes.push({
                 streamer: streamer,
-                radius: normalize_radius(data[streamer]),
+                viewcount: data[streamer],
+                radius: normalizeRadius(data[streamer]),
                 root: "false"
             });
         }
-        viewcount_request_happening = false;
-        initialize_layout();
+        viewcountRequestHappening = false;
+        initializeLayout();
     },
 });
 
-function normalize_radius(radius) {
+function normalizeRadius(radius) {
     return 2*Math.log(radius);
 }
 
-function update_layout() {
-    svg.selectAll("circle")
-        .attr("r", function(d) {
-            for (var j = 0; j < nodes.length; j++) {
-                if (nodes[j].streamer == d.streamer)
-                    // if (nodes[j].radius != d.radius) {
-                    //     console.log("streamer has a change in viewcount");
-                    // }
-                    return nodes[j].radius;
-            }
-            return 0;
-        });
+function onClick(d, i) {
+     // set this circle as being root
+     d3.selectAll("circle").attr("root", false);
+     d3.select(this).attr("root", true);
+}
+
+function updateLayout() {
+    circles = svg.selectAll("circle")
+      .data(nodes, function(d) {
+          return d.streamer;
+      });
+
+    circles.enter().append("circle")
+        .attr("r", function(d) {return d.radius; })
+        .attr("streamer", function(d) { return d.streamer; })
+        .attr("viewcount", function(d) { return d.viewcount; })
+        .attr("root", false)
+        .style("fill", function(d, i) { return color(i % 3); })
+        .on("click", onClick);
+
+    circles.exit().remove();
 }
 
 
-function initialize_layout() {
+function initializeLayout() {
     force = d3.layout.force()
           .gravity(0.05)
           // if the node is at 0 (it is root) and its charge is -2000
@@ -62,40 +71,70 @@ function initialize_layout() {
           .attr("width", width)
           .attr("height", height);
 
-    svg.selectAll("circle")
-         //.data(nodes.slice(1))
-         .data(nodes)
-       .enter().append("circle")
-         .attr("r", function(d) { return d.radius; })
-         .attr("streamer", function(d) { return d.streamer; })
-         .attr("root", false)
-         .style("fill", function(d, i) { return color(i % 3); })
-         .on("click", function(d, i) {
-             // TODO scope is out of wack. Find a way to set this value
-             // try having a root attribute to every circle, and set it to true here
-             d3.selectAll("circle").attr("root", false);
-             d3.select(this).attr("root", true);
-         });
+    circles = svg.selectAll("circle")
+                 .data(nodes, function(d) {
+                     return d.streamer;
+                 });
+
+    circles.enter().append("circle")
+             .attr("r", function(d) { return d.radius; })
+             .attr("streamer", function(d) { return d.streamer; })
+             .attr("viewcount", function(d) { return d.viewcount; })
+             .attr("root", false)
+             .style("fill", function(d, i) { return color(i % 3); })
+             .on("click", onClick);
 
     force.on("tick", function(e) {
 
-        // if at least update_interval seconds have passed since last viewcount update
+        // if at least updateInterval seconds have passed since last viewcount update
         // and if there isn't a current request happening
-        if (((new Date() / 1000) - last_viewcount_request >= update_interval) && !viewcount_request_happening) {
-            last_viewcount_request = new Date() / 1000;
-            viewcount_request_happening = true;
-            nodes = [];
+        if (((new Date() / 1000) - lastViewcountRequest >= updateInterval) && !viewcountRequestHappening) {
+            lastViewcountRequest = new Date() / 1000;
+            viewcountRequestHappening = true;
             $.ajax({
                 url: "http://localhost:5000/streams/viewercounts",
                 success: function(data) {
+                    // record the old positions of nodes
+                    var oldPositions = {};
+                    nodes.forEach(node => oldPositions[node.streamer] = {
+                        x: node.x,
+                        y: node.y,
+                        px: node.px,
+                        py: node.py,
+                    });
+
+                    nodes = [];
                     for (var streamer in data) {
-                        nodes.push({streamer: streamer, radius: normalize_radius(data[streamer])});
+                        // if this is an old node that already has a position copy it over
+                        if (streamer in oldPositions) {
+                            nodes.push({
+                                streamer: streamer,
+                                viewcount: data[streamer],
+                                radius: normalizeRadius(data[streamer]),
+                                root: "false",
+                                x: oldPositions[streamer].x,
+                                y: oldPositions[streamer].y,
+                                px: oldPositions[streamer].px,
+                                py: oldPositions[streamer].py,
+                            });
+                        } else {
+                            nodes.push({
+                                streamer: streamer,
+                                viewcount: data[streamer],
+                                radius: normalizeRadius(data[streamer]),
+                                root: "false"
+                            });
+                        }
                     }
-                    viewcount_request_happening = false;
-                    update_layout();
+
+                    viewcountRequestHappening = false;
+                    force.nodes(nodes);
+                    force.start();
+                    updateLayout();
                 },
             });
         }
+
         // a quadtree is a recurssive spatial subdivision
         // each square is split into 4 subsquares
         var q = d3.geom.quadtree(nodes),
@@ -112,10 +151,10 @@ function initialize_layout() {
         svg.selectAll("circle")
              .attr("x", function(d, i) {
                  if (d3.select(this).attr("root").localeCompare("true") === 0) {
-                     var x_distance = (width / 2) - d.x;
-                     if (x_distance > 3)
+                     var xDistance = (width / 2) - d.x;
+                     if (xDistance > 3)
                          return d.x += 1;
-                     else if (x_distance < -3)
+                     else if (xDistance < -3)
                          return d.x -= 1;
                      else
                          return width / 2;
@@ -123,10 +162,10 @@ function initialize_layout() {
              })
              .attr("y", function(d, i) {
                  if (d3.select(this).attr("root").localeCompare("true") === 0) {
-                     var y_distance = (height / 2) - d.y;
-                     if (y_distance > 3)
+                     var yDistance = (height / 2) - d.y;
+                     if (yDistance > 3)
                          return d.y += 1;
-                     else if (y_distance < -3)
+                     else if (yDistance < -3)
                          return d.y -= 1;
                      else
                          return height / 2;
