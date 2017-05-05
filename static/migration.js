@@ -43,7 +43,9 @@ function updateLayout() {
     circles = svg.selectAll("circle")
       .data(nodes, function(d) {
           return d.streamer;
-      });
+      })
+      .attr("r", function(d) { return d.radius; })
+      .attr("viewcount", function(d) { return d.viewcount; });
 
     circles.enter().append("circle")
         .attr("r", function(d) {return d.radius; })
