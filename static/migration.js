@@ -12,6 +12,15 @@ var updateInterval = 10;
 var viewcountRequestHappening = true;
 var lastViewcountRequest = new Date() / 1000;
 
+// the time in ms for the update transition
+updateTransitionTime = 500;
+
+// the time in ms for the enter transition
+enterTransitionTime = 500;
+
+// the time in ms for the exit transition
+exitTransitionTime = 500;
+
 // get the current list of streams and viewercounts
 $.ajax({
     url: "http://localhost:5000/streams/viewercounts",
@@ -40,22 +49,31 @@ function onClick(d, i) {
 }
 
 function updateLayout() {
-    circles = svg.selectAll("circle")
-      .data(nodes, function(d) {
-          return d.streamer;
-      })
-      .attr("r", function(d) { return d.radius; })
-      .attr("viewcount", function(d) { return d.viewcount; });
+    var circles = svg.selectAll("circle")
+        .data(nodes, function(d) {
+            return d.streamer;
+        });
 
-    circles.enter().append("circle")
-        .attr("r", function(d) {return d.radius; })
-        .attr("streamer", function(d) { return d.streamer; })
+    circles.transition()
+        .duration(updateTransitionTime)
+        .attr("r", function(d) { return d.radius; })
+        .attr("viewcount", function(d) { return d.viewcount; });
+
+    enter = circles.enter().append("circle");
+    enter.attr("r", 0)
+      .transition()
+        .duration(enterTransitionTime)
+        .attr("r", function(d) {return d.radius; });
+    enter.attr("streamer", function(d) { return d.streamer; })
         .attr("viewcount", function(d) { return d.viewcount; })
         .attr("root", false)
         .style("fill", function(d, i) { return color(i % 3); })
         .on("click", onClick);
 
-    circles.exit().remove();
+    circles.exit().transition()
+        .duration(exitTransitionTime)
+        .attr("r", 0)
+        .remove();
 }
 
 
