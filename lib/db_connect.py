@@ -20,11 +20,11 @@ class NoSQLConnection:
 
         try:
             self.db_name = config[self.section_name]['db_name']
-            self.monitoring_collection = \
+            self.monitoring_collection_name = \
                 config[self.section_name]['monitoring_collection_name']
-            self.migration_collection = \
+            self.migrations_collection_name = \
                 config[self.section_name]['migrations_collection_name']
-            self.viewercount_collection = \
+            self.viewercount_collection_name = \
                 config[self.section_name]['viewercount_collection_name']
             self.hostname = config[self.section_name]['hostname']
             self.user = config[self.section_name]['user']
@@ -35,3 +35,6 @@ class NoSQLConnection:
 
         self.client = MongoClient(self.hostname, 27017)
         self.db = self.client[self.db_name]
+        self.monitoring_collection = self.db[self.monitoring_collection_name]
+        self.migrations_collection = self.db[self.migrations_collection_name]
+        self.viewercount_collection = self.db[self.viewercount_collection_name]
