@@ -1,25 +1,28 @@
 var nodes = [];
+var streamLogos = new Map();
+var placeHolderLogo = "https://static-cdn.jtvnw.net/jtv_user_pictures/summit1g-profile_image-87970af8826df799-300x300.png";
 var force;
 var svg;
 
-var width = 2000, height = 2000;
+var width = 4000, height = 2000;
 
 var color = d3.scale.category10();
 
 // number of seconds between getting the new viewercount data
-var updateInterval = 10;
+var updateInterval = 1;
 
+// is there a formal way of doing this, maybe semaphores
 var viewcountRequestHappening = true;
 var lastViewcountRequest = new Date() / 1000;
 
 // the time in ms for the update transition
-updateTransitionTime = 500;
+var updateTransitionTime = 500;
 
 // the time in ms for the enter transition
-enterTransitionTime = 500;
+var enterTransitionTime = 500;
 
 // the time in ms for the exit transition
-exitTransitionTime = 500;
+var exitTransitionTime = 500;
 
 // get the current list of streams and viewercounts
 $.ajax({
@@ -32,6 +35,7 @@ $.ajax({
                 radius: normalizeRadius(data[streamer]),
                 root: "false"
             });
+            setUserLogo(streamer);
         }
         viewcountRequestHappening = false;
         initializeLayout();
@@ -39,7 +43,7 @@ $.ajax({
 });
 
 function normalizeRadius(radius) {
-    return 2*Math.log(radius);
+    return 4*Math.log2(radius) + 20;
 }
 
 function onClick(d, i) {
@@ -59,6 +63,14 @@ function updateLayout() {
         .attr("r", function(d) { return d.radius; })
         .attr("viewcount", function(d) { return d.viewcount; });
 
+    // If there is an entry in streamLogos that isn't a blank string then add the logo
+    circles.filter(function(d) { return streamLogos.get(d.streamer); }).select("image")
+        .attr("xlink:href", function(d) { return streamLogos.get(d.streamer); })
+        .attr("x", -8)
+        .attr("y", -8)
+        .attr("width", 16)
+        .attr("height", 16);
+
     enter = circles.enter().append("circle");
     enter.attr("r", 0)
       .transition()
@@ -69,17 +81,29 @@ function updateLayout() {
         .attr("root", false)
         .style("fill", function(d, i) { return color(i % 3); })
         .on("click", onClick);
+    enter.append("image")
+        .attr("xlink:href", placeHolderLogo)
+        .attr("x", -8)
+        .attr("y", -8)
+        .attr("width", 16)
+        .attr("height", 16);
+
+    // for every new circle add its streamname to the list of streams that need their
+    // twitch logo gotten
+    // call setUserLogo
 
     circles.exit().transition()
         .duration(exitTransitionTime)
         .attr("r", 0)
         .remove();
+
+    // if this stream is in the list of streams that need a logo remove it
 }
 
 
 function initializeLayout() {
     force = d3.layout.force()
-          .gravity(0.05)
+          .gravity(0.004)
           // if the node is at 0 (it is root) and its charge is -2000
           // .charge(function(d, i) { return i ? 0 : -2000; })
           .nodes(nodes)
@@ -96,13 +120,19 @@ function initializeLayout() {
                      return d.streamer;
                  });
 
-    circles.enter().append("circle")
-             .attr("r", function(d) { return d.radius; })
-             .attr("streamer", function(d) { return d.streamer; })
-             .attr("viewcount", function(d) { return d.viewcount; })
-             .attr("root", false)
-             .style("fill", function(d, i) { return color(i % 3); })
-             .on("click", onClick);
+    enter = circles.enter().append("circle")
+         .attr("r", function(d) { return d.radius; })
+         .attr("streamer", function(d) { return d.streamer; })
+         .attr("viewcount", function(d) { return d.viewcount; })
+         .attr("root", false)
+         .style("fill", function(d, i) { return color(i % 3); })
+         .on("click", onClick);
+    enter.append("image")
+        .attr("xlink:href", placeHolderLogo)
+        .attr("x", -8)
+        .attr("y", -8)
+        .attr("width", 16)
+        .attr("height", 16);
 
     force.on("tick", function(e) {
 
@@ -138,6 +168,7 @@ function initializeLayout() {
                                 py: oldPositions[streamer].py,
                             });
                         } else {
+                            setUserLogo(streamer);
                             nodes.push({
                                 streamer: streamer,
                                 viewcount: data[streamer],
@@ -228,3 +259,17 @@ function collide(node) {
     };
 }
 
+function setUserLogo(streamname) {
+    $.ajax({
+        url: "https://api.twitch.tv/kraken/users?login=" + streamname,
+        type: "GET",
+        beforeSend: function(xhr) {
+            xhr.setRequestHeader("Client-ID", "l6w05dd8luqgyk33kjn99qoahaonrs");
+            xhr.setRequestHeader("Accept", "application/vnd.twitchtv.v5+json");
+        },
+        success: function(data) {
+            var streamLogo =  data.users[0].logo;
+            streamLogos.set(streamname, streamLogo);
+        },
+    });
+}
