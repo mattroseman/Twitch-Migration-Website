@@ -1,6 +1,7 @@
 var nodes = [];
 var streamLogos = new Map();
-var placeHolderLogo = "https://static-cdn.jtvnw.net/jtv_user_pictures/summit1g-profile_image-87970af8826df799-300x300.png";
+var placeHolderLogo = "";
+var defaultFill = "#eee";
 var force;
 var svg;
 
@@ -48,56 +49,55 @@ function normalizeRadius(radius) {
 
 function onClick(d, i) {
      // set this circle as being root
-     d3.selectAll("circle").attr("root", false);
+     d3.selectAll("g.node").attr("root", false);
      d3.select(this).attr("root", true);
 }
 
 function updateLayout() {
-    var circles = svg.selectAll("circle")
-        .data(nodes, function(d) {
-            return d.streamer;
-        });
-
-    circles.transition()
-        .duration(updateTransitionTime)
-        .attr("r", function(d) { return d.radius; })
+    // UPDATE
+    var node = svg.selectAll("g.node")
+        .data(nodes, function(d) { return d.streamer; })
         .attr("viewcount", function(d) { return d.viewcount; });
+    node.selectAll("circle").transition()
+        .duration(updateTransitionTime)
+        .attr("r", function(d) { return d.radius; });
 
-    // If there is an entry in streamLogos that isn't a blank string then add the logo
-    circles.filter(function(d) { return streamLogos.get(d.streamer); }).select("image")
-        .attr("xlink:href", function(d) { return streamLogos.get(d.streamer); })
-        .attr("x", -8)
-        .attr("y", -8)
-        .attr("width", 16)
-        .attr("height", 16);
+    // if the streamers logo has been gotten from twitch update it
+    node.filter(function(d) { return streamLogos.get(d.streamer); }).selectAll("image")
+        .attr("xlink:href", function(d) { return streamLogos.get(d.streamer); });
 
-    enter = circles.enter().append("circle");
-    enter.attr("r", 0)
-      .transition()
-        .duration(enterTransitionTime)
-        .attr("r", function(d) {return d.radius; });
-    enter.attr("streamer", function(d) { return d.streamer; })
+    // ENTER
+    var nodeEnter = node.enter().append("svg:g")
+        .attr("class", "node")
+        .attr("transform", nodeTransform)
+        .attr("streamer", function(d) { return d.streamer; })
         .attr("viewcount", function(d) { return d.viewcount; })
         .attr("root", false)
-        .style("fill", function(d, i) { return color(i % 3); })
         .on("click", onClick);
-    enter.append("image")
+
+    nodeEnter.append("svg:circle")
+        .attr("r", 0)
+        .transition()
+        .duration(enterTransitionTime)
+        .attr("r", function(d) { return d.radius; });
+    nodeEnter.selectAll("circle")
+        .style("fill", defaultFill);
+
+    nodeEnter.append("svg:image")
         .attr("xlink:href", placeHolderLogo)
         .attr("x", -8)
         .attr("y", -8)
-        .attr("width", 16)
-        .attr("height", 16);
+        .attr("width", 200)
+        .attr("height", 200);
 
-    // for every new circle add its streamname to the list of streams that need their
-    // twitch logo gotten
-    // call setUserLogo
-
-    circles.exit().transition()
+    // EXIT
+    var nodeExit = node.exit();
+    nodeExit.selectAll("circle")
+        .transition()
         .duration(exitTransitionTime)
         .attr("r", 0)
         .remove();
-
-    // if this stream is in the list of streams that need a logo remove it
+    nodeExit.remove();
 }
 
 
@@ -115,24 +115,27 @@ function initializeLayout() {
           .attr("width", width)
           .attr("height", height);
 
-    circles = svg.selectAll("circle")
-                 .data(nodes, function(d) {
-                     return d.streamer;
-                 });
+    var node = svg.selectAll("g.node")
+        .data(nodes, function(d) { return d.streamer; });
 
-    enter = circles.enter().append("circle")
-         .attr("r", function(d) { return d.radius; })
-         .attr("streamer", function(d) { return d.streamer; })
-         .attr("viewcount", function(d) { return d.viewcount; })
-         .attr("root", false)
-         .style("fill", function(d, i) { return color(i % 3); })
-         .on("click", onClick);
-    enter.append("image")
+    var nodeEnter = node.enter().append("svg:g")
+        .attr("class", "node")
+        .attr("transform", nodeTransform)
+        .attr("streamer", function(d) { return d.streamer; })
+        .attr("viewcount", function(d) { return d.viewcount; })
+        .attr("root", false)
+        .on("click", onClick);
+
+    nodeEnter.append("svg:circle")
+        .attr("r", function(d) { return d.radius; })
+        .style("fill", defaultFill);
+
+    nodeEnter.append("svg:image")
         .attr("xlink:href", placeHolderLogo)
         .attr("x", -8)
         .attr("y", -8)
-        .attr("width", 16)
-        .attr("height", 16);
+        .attr("width", 200)
+        .attr("height", 200);
 
     force.on("tick", function(e) {
 
@@ -195,33 +198,12 @@ function initializeLayout() {
         // call collide on every node pair
         while (++i < n) q.visit(collide(nodes[i]));
 
-        svg.selectAll("circle")
-             .attr("cx", function(d) { return d.x; })
-             .attr("cy", function(d) { return d.y; });
+        svg.selectAll("g.node")
+            .attr("transform", nodeTransform);
+        // svg.selectAll("circle")
+        //      .attr("cx", function(d) { return d.x; })
+        //      .attr("cy", function(d) { return d.y; });
 
-        svg.selectAll("circle")
-             .attr("x", function(d, i) {
-                 if (d3.select(this).attr("root").localeCompare("true") === 0) {
-                     var xDistance = (width / 2) - d.x;
-                     if (xDistance > 3)
-                         return d.x += 1;
-                     else if (xDistance < -3)
-                         return d.x -= 1;
-                     else
-                         return width / 2;
-                 }
-             })
-             .attr("y", function(d, i) {
-                 if (d3.select(this).attr("root").localeCompare("true") === 0) {
-                     var yDistance = (height / 2) - d.y;
-                     if (yDistance > 3)
-                         return d.y += 1;
-                     else if (yDistance < -3)
-                         return d.y -= 1;
-                     else
-                         return height / 2;
-                 }
-             });
         force.resume();
     });
 
@@ -233,6 +215,31 @@ function initializeLayout() {
         force.resume();
     });
     */
+}
+
+function nodeTransform(d, i) {
+    if (d.root.localeCompare("true") === 0) {
+        var xDistance = (width / 2) - d.x;
+        if (xDistance > 3)
+            return d.x += 1;
+        else if (xDistance < -3)
+            return d.x -= 1;
+        else
+            return width / 2;
+    }
+    if (d.root.localeCompare("true") === 0) {
+        var yDistance = (height / 2) - d.y;
+        if (yDistance > 3)
+            return d.y += 1;
+        else if (yDistance < -3)
+            return d.y -= 1;
+        else
+            return height / 2;
+    }
+
+    nodes[i] = d;
+
+    return "translate(" + d.x + ", " + d.y + ")";
 }
 
 function collide(node) {
