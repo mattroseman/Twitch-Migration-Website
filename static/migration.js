@@ -10,7 +10,7 @@ var width = 4000, height = 2000;
 var color = d3.scale.category10();
 
 // number of seconds between getting the new viewercount data
-var updateInterval = 1;
+var updateInterval = 5;
 
 // is there a formal way of doing this, maybe semaphores
 var viewcountRequestHappening = true;
@@ -63,8 +63,18 @@ function updateLayout() {
         .attr("r", function(d) { return d.radius; });
 
     // if the streamers logo has been gotten from twitch update it
-    node.filter(function(d) { return streamLogos.get(d.streamer); }).selectAll("image")
-        .attr("xlink:href", function(d) { return streamLogos.get(d.streamer); });
+    node.filter(function(d) { return streamLogos.get(d.streamer); })
+        .selectAll("defs").selectAll("pattern").selectAll("image")
+        .attr("xlink:href", function(d) { 
+            var logo = streamLogos.get(d.streamer);
+            return logo;
+        });
+    node.filter(function(d) { return streamLogos.get(d.streamer); })
+        .selectAll("circle")
+        .style("fill", function(d) {
+            streamLogos.delete(d.streamer);
+            return "url(#" + d.streamer + "-logo)";
+        });
 
     // ENTER
     var nodeEnter = node.enter().append("svg:g")
@@ -83,12 +93,28 @@ function updateLayout() {
     nodeEnter.selectAll("circle")
         .style("fill", defaultFill);
 
-    nodeEnter.append("svg:image")
+    pattern = nodeEnter.append("defs").append("pattern")
+        .attr("id", function(d) {
+            return d.streamer + "-logo";
+        })
+        .attr("x", 0)
+        .attr("y", 0)
+        .attr("width", function(d) {
+            return 2*d.radius;
+        })
+        .attr("height", function(d) {
+            return 2*d.radius;
+        });
+    pattern.append("svg:image")
         .attr("xlink:href", placeHolderLogo)
-        .attr("x", -8)
-        .attr("y", -8)
-        .attr("width", 200)
-        .attr("height", 200);
+        .attr("x", 0)
+        .attr("y", 0)
+        .attr("width", function(d) {
+            return 2*d.radius;
+        })
+        .attr("height", function(d) {
+            return 2*d.radius;
+        });
 
     // EXIT
     var nodeExit = node.exit();
@@ -130,12 +156,29 @@ function initializeLayout() {
         .attr("r", function(d) { return d.radius; })
         .style("fill", defaultFill);
 
-    nodeEnter.append("svg:image")
+    pattern = nodeEnter.append("defs").append("pattern")
+        .attr("id", function(d) {
+            return d.streamer + "-logo";
+        })
+        .attr("x", 0)
+        .attr("y", 0)
+        .attr("width", function(d) {
+            return 2*d.radius;
+        })
+        .attr("height", function(d) {
+            return 2*d.radius;
+        });
+    pattern.append("svg:image")
         .attr("xlink:href", placeHolderLogo)
-        .attr("x", -8)
-        .attr("y", -8)
-        .attr("width", 200)
-        .attr("height", 200);
+        .attr("x", 0)
+        .attr("y", 0)
+        .attr("width", function(d) {
+            return 2*d.radius;
+        })
+        .attr("height", function(d) {
+            return 2*d.radius;
+        });
+
 
     force.on("tick", function(e) {
 
