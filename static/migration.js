@@ -64,16 +64,10 @@ function updateLayout() {
 
     // if the streamers logo has been gotten from twitch update it
     node.filter(function(d) { return streamLogos.get(d.streamer); })
-        .selectAll("defs").selectAll("pattern").selectAll("image")
+        .selectAll("image")
         .attr("xlink:href", function(d) { 
             var logo = streamLogos.get(d.streamer);
             return logo;
-        });
-    node.filter(function(d) { return streamLogos.get(d.streamer); })
-        .selectAll("circle")
-        .style("fill", function(d) {
-            streamLogos.delete(d.streamer);
-            return "url(#" + d.streamer + "-logo)";
         });
 
     // ENTER
@@ -93,22 +87,14 @@ function updateLayout() {
     nodeEnter.selectAll("circle")
         .style("fill", defaultFill);
 
-    pattern = nodeEnter.append("defs").append("pattern")
-        .attr("id", function(d) {
-            return d.streamer + "-logo";
-        })
-        .attr("x", 0)
-        .attr("y", 0)
-        .attr("width", function(d) {
-            return 2*d.radius;
-        })
-        .attr("height", function(d) {
-            return 2*d.radius;
-        });
-    pattern.append("svg:image")
+    nodeEnter.append("svg:image")
         .attr("xlink:href", placeHolderLogo)
-        .attr("x", 0)
-        .attr("y", 0)
+        .attr("x", function(d) {
+            return -d.radius;
+        })
+        .attr("y", function(d) {
+            return -d.radius;
+        })
         .attr("width", function(d) {
             return 2*d.radius;
         })
@@ -156,22 +142,14 @@ function initializeLayout() {
         .attr("r", function(d) { return d.radius; })
         .style("fill", defaultFill);
 
-    pattern = nodeEnter.append("defs").append("pattern")
-        .attr("id", function(d) {
-            return d.streamer + "-logo";
-        })
-        .attr("x", 0)
-        .attr("y", 0)
-        .attr("width", function(d) {
-            return 2*d.radius;
-        })
-        .attr("height", function(d) {
-            return 2*d.radius;
-        });
-    pattern.append("svg:image")
+    nodeEnter.append("svg:image")
         .attr("xlink:href", placeHolderLogo)
-        .attr("x", 0)
-        .attr("y", 0)
+        .attr("x", function(d) {
+            return -d.radius;
+        })
+        .attr("y", function(d) {
+            return -d.radius;
+        })
         .attr("width", function(d) {
             return 2*d.radius;
         })
