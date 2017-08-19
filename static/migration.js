@@ -2,24 +2,25 @@ var nodes = [];
 var force;
 var svg;
 
-var width = 2000, height = 2000;
+var width = 4000, height = 2000;
 
 var color = d3.scale.category10();
 
 // number of seconds between getting the new viewercount data
-var updateInterval = 10;
+var updateInterval = 5;
 
+// is there a formal way of doing this, maybe semaphores
 var viewcountRequestHappening = true;
 var lastViewcountRequest = new Date() / 1000;
 
 // the time in ms for the update transition
-updateTransitionTime = 500;
+var updateTransitionTime = 500;
 
 // the time in ms for the enter transition
-enterTransitionTime = 500;
+var enterTransitionTime = 500;
 
 // the time in ms for the exit transition
-exitTransitionTime = 500;
+var exitTransitionTime = 500;
 
 // get the current list of streams and viewercounts
 $.ajax({
@@ -39,7 +40,7 @@ $.ajax({
 });
 
 function normalizeRadius(radius) {
-    return 2*Math.log(radius);
+    return 4*Math.log2(radius) + 20;
 }
 
 function onClick(d, i) {
@@ -79,7 +80,7 @@ function updateLayout() {
 
 function initializeLayout() {
     force = d3.layout.force()
-          .gravity(0.05)
+          .gravity(0.004)
           // if the node is at 0 (it is root) and its charge is -2000
           // .charge(function(d, i) { return i ? 0 : -2000; })
           .nodes(nodes)
