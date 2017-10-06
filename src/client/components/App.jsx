@@ -1,12 +1,23 @@
 import React, { Component } from 'react';
+import ChannelSearch from './ChannelSearch.jsx';
 import Graph from './Graph.jsx';
 
 export default class App extends Component {
+    constructor(props) {
+        super(props);
+
+        this.handleChannelSearchInput = this.handleChannelSearchInput.bind(this);
+    }
+
+    // handleChannelInput is called anytime the search bar for a channel changes
+    handleChannelSearchInput(channel) {
+    }
+
     render() {
         return (
             <div>
                 <h1>Twitch Migrations</h1>
-                <p>This text should show up</p>
+                <ChannelSearch onChange={this.handleChannelSearchInput}/>
                 <Graph />
             </div>
         );

@@ -1,0 +1,29 @@
+.searchbar {
+    height: 25px;
+
+    display: flex;
+    flex-direction: row;
+}
+
+.searchbar__button {
+    height: 25px;
+    width: 25px;
+
+    display: flex;
+    background: transparent;
+    background-position: center center;
+    background-repeat: no-repeat;
+    background-image: url(./../icons/search.svg);
+    background-size: 80%;
+
+    border: 0;
+    cursor: pointer;
+    font-size: 0;
+    outline: 0;
+}
+
+.searchbar__input {
+    width: 200px;
+
+    display: flex;
+}
