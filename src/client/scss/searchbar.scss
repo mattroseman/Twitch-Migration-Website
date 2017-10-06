@@ -1,8 +1,12 @@
 .searchbar {
     height: 25px;
+    width: 225px;
 
     display: flex;
     flex-direction: row;
+
+    border-style: solid;
+    border-width: 1px;
 }
 
 .searchbar__button {
@@ -26,4 +30,9 @@
     width: 200px;
 
     display: flex;
+
+    border: 0;
+    outline: 0;
+
+    font-size: 15;
 }

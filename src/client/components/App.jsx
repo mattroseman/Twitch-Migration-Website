@@ -1,6 +1,7 @@
 import React, { Component } from 'react';
 import ChannelSearch from './ChannelSearch.jsx';
 import Graph from './Graph.jsx';
+import SelectTimeRange from './SelectTimeRange.jsx';
 
 export default class App extends Component {
     constructor(props) {
@@ -19,6 +20,7 @@ export default class App extends Component {
                 <h1>Twitch Migrations</h1>
                 <ChannelSearch onChange={this.handleChannelSearchInput}/>
                 <Graph />
+                <SelectTimeRange />
             </div>
         );
     }

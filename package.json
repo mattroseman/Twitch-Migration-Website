@@ -21,7 +21,9 @@
   "homepage": "https://github.com/mroseman/Twitch-Migration-website#readme",
   "dependencies": {
     "express": "^4.15.3",
+    "moment": "^2.18.1",
     "react": "^15.6.1",
+    "react-datetime": "^2.10.3",
     "react-dom": "^15.6.1"
   },
   "devDependencies": {
